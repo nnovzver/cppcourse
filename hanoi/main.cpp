@@ -9,7 +9,7 @@
 class Hanoi
 {
   public:
-    Hanoi(uint8_t disks) : disks(disks)
+    Hanoi(uint8_t disks) : disks(disks), steps(0)
     {
         for (uint8_t disk = disks; disk > 0; --disk)
         {
@@ -45,12 +45,14 @@ class Hanoi
     {
         render();
         moveTower(0, 2, disks);
+        std::cout << "Algorithm used " << (int)steps << " steps" << std::endl;
     }
 
   private:
     uint8_t disks;
     uint8_t maxDiskWidth;
     std::vector<uint8_t> pins[3];
+    uint8_t steps;
 
     uint8_t diskWidth(uint8_t disk) { return 1 + 2 * (disk - 1); }
     uint8_t findFreePin(uint8_t pin1, uint8_t pin2)
@@ -69,6 +71,9 @@ class Hanoi
         uint8_t disk = pins[fromPin].back();
         pins[fromPin].pop_back();
         pins[toPin].push_back(disk);
+
+        ++steps;
+
         render();
     }
 
