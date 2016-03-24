@@ -54,6 +54,7 @@ class Hanoi
     int steps;
 
     int diskWidth(int disk) { return 1 + 2 * (disk - 1); }
+
     int findFreePin(int pin1, int pin2)
     {
         assert(0 <= pin1 && pin1 <= 2);
