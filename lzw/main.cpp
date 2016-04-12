@@ -9,8 +9,11 @@
 #include <iterator>
 #include <algorithm>
 #include <cmath>
+#include <climits>
 
 namespace {
+
+#define CODEBIT_MAX 16
 
 void printUsage(char const *name)
 {
@@ -28,13 +31,13 @@ struct BinaryArray {
 
   void addBits(uint16_t bits, size_t bitSize)
   {
-    assert(bitSize <= 16);
+    assert(bitSize <= CODEBIT_MAX);
 
-    size_t freeBits = buff.size() * 8 - bitIdx;
+    size_t freeBits = buff.size() * CHAR_BIT - bitIdx;
 
     if (freeBits == 0) {
       buff.push_back(0);
-      freeBits = 8;
+      freeBits = CHAR_BIT;
     }
 
     size_t bitsRemain = bitSize;
@@ -50,22 +53,22 @@ struct BinaryArray {
         last |= (bits & MASK_SHIFT(freeBits, (bitsRemain - freeBits))) >> (bitsRemain - freeBits);
         bitsRemain -= freeBits;
         buff.push_back(0);
-        freeBits = 8;
+        freeBits = CHAR_BIT;
       }
     }
 
     bitIdx += bitSize;
   }
 
-  uint16_t getBits(size_t idx, size_t size)
+  uint16_t getBits(size_t bitIdx, size_t size)
   {
-    assert(size <= 16);
+    assert(size <= CODEBIT_MAX);
 
     uint16_t res = 0;
 
     size_t remain = size;
-    size_t vecIdx = idx / 8;
-    size_t dataBits = (8 - idx % 8);
+    size_t vecIdx = bitIdx / CHAR_BIT;
+    size_t dataBits = (CHAR_BIT - bitIdx % CHAR_BIT);
     while (remain) {
       if (remain <= dataBits) {
         res |= (buff[vecIdx] >> (dataBits - remain)) & MASK(remain);
@@ -75,14 +78,14 @@ struct BinaryArray {
         res |= ((buff[vecIdx]) << (remain - dataBits)) & MASK_SHIFT(dataBits, (remain - dataBits));
         ++vecIdx;
         remain -= dataBits;
-        dataBits = 8;
+        dataBits = CHAR_BIT;
       }
     }
   }
 
   size_t bsize()
   {
-    return buff.size() * 8;
+    return buff.size() * CHAR_BIT;
   }
 
   int save(std::string filename)
@@ -115,28 +118,6 @@ private:
   std::vector<uint8_t> buff;
 };
 
-void testBinaryArray() {
-  BinaryArray ba;
-  ba.addBits(0xAA, 8);
-  ba.addBits(0xBB, 8);
-  ba.addBits(0x3, 2);
-  ba.addBits(0x1, 2);
-  ba.addBits(0x3, 2);
-  ba.addBits(0x1, 2);
-  ba.addBits(0xAAB, 12);
-  ba.addBits(0x1, 4);
-  ba.print();
-  std::cout << std::hex << "0x" << ba.getBits(0, 8) << std::endl;
-  std::cout << std::hex << "0x" << ba.getBits(8, 8) << std::endl;
-  std::cout << std::hex << "0x" << ba.getBits(16, 2) << std::endl;
-  std::cout << std::hex << "0x" << ba.getBits(18, 2) << std::endl;
-  std::cout << std::hex << "0x" << ba.getBits(20, 2) << std::endl;
-  std::cout << std::hex << "0x" << ba.getBits(22, 2) << std::endl;
-  std::cout << std::hex << "0x" << ba.getBits(24, 12) << std::endl;
-  std::cout << std::hex << "0x" << ba.getBits(36, 4) << std::endl;
-}
-
-
 } // namespace
 
 
@@ -153,8 +134,8 @@ int main(int argc, char **argv)
     if (fin.good()) {
       // fill dictionary
       std::map<std::string, int> dict;
-      for (int i = 0; i < 256; ++i) dict[std::string(1, i)] = i;
-      uint16_t dictSize = 256;
+      for (int i = 0; i < UCHAR_MAX + 1; ++i) dict[std::string(1, i)] = i;
+      uint16_t dictSize = UCHAR_MAX + 1;
 
       size_t bitsInCode = 9;
 
@@ -170,11 +151,11 @@ int main(int argc, char **argv)
           else {
             // std::cout << "key " << dict[before] << " bitsInCode " << bitsInCode << std::endl;
             compressed.addBits(dict[before], bitsInCode);
-            if (dictSize < 65535) {
+            if (dictSize < USHRT_MAX) {
               dict[befCur] = dictSize++;
             }
             before = std::string(1, current);
-            if (pow(2, bitsInCode) < dictSize && bitsInCode < 16)
+            if (pow(2, bitsInCode) < dictSize && bitsInCode < CODEBIT_MAX)
               ++bitsInCode;
           }
         }
@@ -183,12 +164,6 @@ int main(int argc, char **argv)
       if (!before.empty()) {
         compressed.addBits(dict[before], bitsInCode);
       }
-
-      // for (int i = 0; i < 17; ++i) {
-      //   int j = i * 9;
-      //   std::cout << compressed.getBits(j, 9) << std::endl;
-      // }
-      // compressed.print();
 
       compressed.save(std::string(argv[2]) + ".bin");
     }
@@ -204,15 +179,9 @@ int main(int argc, char **argv)
       BinaryArray compressed;
       compressed.load(std::string(argv[2]));
 
-      // compressed.print();
-      // for (int i = 0; i < 17; ++i) {
-      //   int j = i * 9;
-      //   std::cout << compressed.getBits(j, 9) << std::endl;
-      // }
-
       std::map<uint16_t, std::string> dict;
-      for (uint16_t i = 0; i < 256; ++i) dict[i] = std::string(1, i);
-      uint16_t dictSize = 256;
+      for (uint16_t i = 0; i < UCHAR_MAX + 1; ++i) dict[i] = std::string(1, i);
+      uint16_t dictSize = UCHAR_MAX + 1;
 
       size_t bitsInCode = 9;
       size_t bitIdx = 0;
@@ -225,10 +194,9 @@ int main(int argc, char **argv)
 
       std::string current;
       while (bitIdx + bitsInCode < compressed.bsize()) {
-        if (pow(2, bitsInCode) <= dictSize && bitsInCode < 16)
+        if (pow(2, bitsInCode) <= dictSize && bitsInCode < CODEBIT_MAX)
           ++bitsInCode;
         uint16_t key = compressed.getBits(bitIdx, bitsInCode);
-        // std::cout << "bitIdx " << bitIdx << " bitsInCode " << bitsInCode << std::endl;
         // std::cout << "key " << key << " bitsInCode " << bitsInCode << std::endl;
         bitIdx += bitsInCode;
         if (dict.count(key)) {
@@ -243,7 +211,7 @@ int main(int argc, char **argv)
 
         fout << current;
         fout.flush();
-        if (dictSize < 65535) {
+        if (dictSize < USHRT_MAX) {
           dict[dictSize++] = before + current[0];
         }
 
