@@ -40,12 +40,7 @@ struct BinaryArray {
     size_t bitsRemain = bitSize;
 
     while (bitsRemain) {
-      if (bitsRemain == freeBits) {
-        uint8_t &last = buff.back();
-        last |= bits & MASK(bitsRemain);
-        bitsRemain = 0;
-      }
-      else if (bitsRemain < freeBits) {
+      if (bitsRemain <= freeBits) {
         uint8_t &last = buff.back();
         last |= (bits & MASK(bitsRemain)) << (freeBits - bitsRemain);
         bitsRemain = 0;
@@ -72,11 +67,7 @@ struct BinaryArray {
     size_t vecIdx = idx / 8;
     size_t dataBits = (8 - idx % 8);
     while (remain) {
-      if (dataBits == remain) {
-        res |= buff[vecIdx] & MASK(remain);
-        remain = 0;
-      }
-      else if (remain < dataBits) {
+      if (remain <= dataBits) {
         res |= (buff[vecIdx] >> (dataBits - remain)) & MASK(remain);
         remain = 0;
       }

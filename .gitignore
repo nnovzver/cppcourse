@@ -6,3 +6,4 @@ cmake_install.cmake
 
 # binary
 hanoi/hanoi
+lzw/lzw
