@@ -4,8 +4,8 @@
 #define ERR_FEXIST     1
 #define ERR_DECOMPRESS 2
 
-int compress(char const* path);
+int compress(char const*, char const*);
 
-int decompress(char const* path);
+int decompress(char const*, char const*);
 
 #endif

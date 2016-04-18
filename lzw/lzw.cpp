@@ -44,7 +44,8 @@ struct BinaryArray {
       }
       else if (bitsRemain > freeBits) {
         uint8_t &last = buff.back();
-        last |= (bits & MASK_SHIFT(freeBits, (bitsRemain - freeBits))) >> (bitsRemain - freeBits);
+        last |= (bits & MASK_SHIFT(freeBits, (bitsRemain - freeBits))) >>
+                 (bitsRemain - freeBits);
         bitsRemain -= freeBits;
         buff.push_back(0);
         freeBits = CHAR_BIT;
@@ -69,7 +70,8 @@ struct BinaryArray {
         remain = 0;
       }
       else if (remain > dataBits) {
-        res |= ((buff[vecIdx]) << (remain - dataBits)) & MASK_SHIFT(dataBits, (remain - dataBits));
+        res |= ((buff[vecIdx]) << (remain - dataBits)) &
+                MASK_SHIFT(dataBits, (remain - dataBits));
         ++vecIdx;
         remain -= dataBits;
         dataBits = CHAR_BIT;
@@ -95,7 +97,8 @@ struct BinaryArray {
     std::ifstream f(filename, std::ios::binary);
     if (f.good()) {
       buff.clear();
-      std::copy(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>(),
+      std::copy(std::istreambuf_iterator<char>(f),
+                std::istreambuf_iterator<char>(),
                 std::back_inserter(buff));
     }
   }
@@ -114,9 +117,9 @@ private:
 
 } // namespace
 
-int compress(char const* path)
+int compress(char const* frompath, char const* topath)
 {
-  std::ifstream fin(path, std::ios::binary);
+  std::ifstream fin(frompath, std::ios::binary);
   if (fin.good()) {
     // fill dictionary
     std::map<std::string, int> dict;
@@ -135,7 +138,8 @@ int compress(char const* path)
           before = befCur;
         }
         else {
-          // std::cout << "key " << dict[before] << " bitsInCode " << bitsInCode << std::endl;
+          // std::cout << "key " << dict[before] << " bitsInCode "
+          //           << bitsInCode << std::endl;
           compressed.addBits(dict[before], bitsInCode);
           if (dictSize < USHRT_MAX) {
             dict[befCur] = dictSize++;
@@ -151,7 +155,7 @@ int compress(char const* path)
       compressed.addBits(dict[before], bitsInCode);
     }
 
-    compressed.save(std::string(path) + ".bin");
+    compressed.save(topath);
   }
   else {
     return ERR_FEXIST;
@@ -160,12 +164,12 @@ int compress(char const* path)
   return 0;
 }
 
-int decompress(char const* path)
+int decompress(char const* frompath, char const* topath)
 {
-  std::ofstream fout(std::string(path) + ".U", std::ios::binary);
+  std::ofstream fout(topath, std::ios::binary);
   if (fout.good()) {
     BinaryArray compressed;
-    compressed.load(std::string(path));
+    compressed.load(std::string(frompath));
 
     std::map<uint16_t, std::string> dict;
     for (uint16_t i = 0; i < UCHAR_MAX + 1; ++i) dict[i] = std::string(1, i);
@@ -185,7 +189,8 @@ int decompress(char const* path)
       if (pow(2, bitsInCode) <= dictSize && bitsInCode < CODEBIT_MAX)
         ++bitsInCode;
       uint16_t key = compressed.getBits(bitIdx, bitsInCode);
-      // std::cout << "key " << key << " bitsInCode " << bitsInCode << std::endl;
+      // std::cout << "key " << key << " bitsInCode "
+      //           << bitsInCode << std::endl;
       bitIdx += bitsInCode;
       if (dict.count(key)) {
         current = dict[key];
